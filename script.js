@@ -82,16 +82,70 @@ function startGame() {
   }, 1000 / 60); // 60 FPS
 }
 
+// Device detection
+const isTouchDevice = 'ontouchstart' in window || navigator.maxTouchPoints > 0 || navigator.msMaxTouchPoints > 0;
+const isMouseDevice = window.matchMedia('(pointer:fine)').matches;
+
 // Movement controls
-document.addEventListener('keydown', (event) => {
-  const playerLeft = parseInt(player.style.left || 0);
-  if (event.key === 'ArrowLeft' || event.key === 'a') {
-    player.style.left = `${Math.max(playerLeft - playerSpeed, 0)}px`;
-  }
-  if (event.key === 'ArrowRight' || event.key === 'd') {
-    player.style.left = `${Math.min(playerLeft + playerSpeed, gameScreen.offsetWidth - player.offsetWidth)}px`;
-  }
-});
+let touchStartX = 0;
+let touchStartY = 0;
+let touchMoveX = 0;
+let touchMoveY = 0;
+let mouseDown = false;
+let mouseStartX = 0;
+let mouseStartY = 0;
+
+if (isTouchDevice) {
+  // Touch event listeners
+  gameScreen.addEventListener('touchstart', (event) => {
+    event.preventDefault(); // Prevent default touch behavior
+    touchStartX = event.touches[0].clientX;
+    touchStartY = event.touches[0].clientY;
+  });
+
+  gameScreen.addEventListener('touchmove', (event) => {
+    event.preventDefault(); // Prevent default touch behavior
+    touchMoveX = event.touches[0].clientX;
+    touchMoveY = event.touches[0].clientY;
+
+    // Calculate the distance moved
+    const deltaX = touchMoveX - touchStartX;
+
+    // Update player position
+    const playerLeft = parseInt(player.style.left || 0);
+    player.style.left = `${Math.min(Math.max(playerLeft + deltaX, 0), gameScreen.offsetWidth - player.offsetWidth)}px`;
+
+    // Update touch start position for next move
+    touchStartX = touchMoveX;
+    touchStartY = touchMoveY;
+  });
+} else if (isMouseDevice) {
+  // Mouse event listeners
+  gameScreen.addEventListener('mousedown', (event) => {
+    mouseDown = true;
+    mouseStartX = event.clientX;
+    mouseStartY = event.clientY;
+  });
+
+  gameScreen.addEventListener('mousemove', (event) => {
+    if (!mouseDown) return;
+
+    // Calculate the distance moved
+    const deltaX = event.clientX - mouseStartX;
+
+    // Update player position
+    const playerLeft = parseInt(player.style.left || 0);
+    player.style.left = `${Math.min(Math.max(playerLeft + deltaX, 0), gameScreen.offsetWidth - player.offsetWidth)}px`;
+
+    // Update mouse start position for next move
+    mouseStartX = event.clientX;
+    mouseStartY = event.clientY;
+  });
+
+  gameScreen.addEventListener('mouseup', () => {
+    mouseDown = false;
+  });
+}
 
 // Start the game on page load
 startGame();
